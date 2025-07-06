@@ -1,0 +1,72 @@
+import React from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Filter } from "lucide-react";
+
+export default function LeadsFilters({ filters, onFiltersChange }) {
+  const handleFilterChange = (type, value) => {
+    onFiltersChange(prev => ({
+      ...prev,
+      [type]: value
+    }));
+  };
+
+  return (
+    <div className="flex flex-wrap gap-3">
+      <div className="flex items-center gap-2">
+        <Filter className="w-4 h-4 text-gray-500" />
+        <Select
+          value={filters.status}
+          onValueChange={(value) => handleFilterChange("status", value)}
+        >
+          <SelectTrigger className="w-32">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="new">New</SelectItem>
+            <SelectItem value="assigned">Assigned</SelectItem>
+            <SelectItem value="contacted">Contacted</SelectItem>
+            <SelectItem value="closed">Closed</SelectItem>
+            <SelectItem value="not_closed">Not Closed</SelectItem>
+            <SelectItem value="credit_fail">Credit Fail</SelectItem>
+            <SelectItem value="install_scheduled">Install Scheduled</SelectItem>
+            <SelectItem value="installed">Installed</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <Select
+        value={filters.priority}
+        onValueChange={(value) => handleFilterChange("priority", value)}
+      >
+        <SelectTrigger className="w-32">
+          <SelectValue placeholder="Priority" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Priority</SelectItem>
+          <SelectItem value="low">Low</SelectItem>
+          <SelectItem value="medium">Medium</SelectItem>
+          <SelectItem value="high">High</SelectItem>
+          <SelectItem value="urgent">Urgent</SelectItem>
+        </SelectContent>
+      </Select>
+
+      <Select
+        value={filters.source}
+        onValueChange={(value) => handleFilterChange("source", value)}
+      >
+        <SelectTrigger className="w-32">
+          <SelectValue placeholder="Source" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Sources</SelectItem>
+          <SelectItem value="door_to_door">Door to Door</SelectItem>
+          <SelectItem value="online">Online</SelectItem>
+          <SelectItem value="referral">Referral</SelectItem>
+          <SelectItem value="social_media">Social Media</SelectItem>
+          <SelectItem value="other">Other</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}

@@ -1,0 +1,78 @@
+import React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { TrendingUp, Users, DollarSign, Calendar } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+
+export default function DashboardStats({ leads, currentUser, isLoading }) {
+  const getStats = () => {
+    const totalLeads = leads.length;
+    const closedLeads = leads.filter(l => l.status === 'closed').length;
+    const totalValue = leads.filter(l => l.status === 'closed').reduce((sum, l) => sum + (l.contract_value || 0), 0);
+    const monthlyCommission = leads.filter(l => l.status === 'closed').reduce((sum, l) => sum + (l.commission_amount || 0), 0);
+    
+    return {
+      totalLeads,
+      closedLeads,
+      totalValue,
+      monthlyCommission
+    };
+  };
+
+  const stats = getStats();
+
+  const StatCard = ({ title, value, icon: Icon, color, trend }) => (
+    <Card className="relative overflow-hidden shadow-lg border-0">
+      <div className={`absolute top-0 right-0 w-32 h-32 transform translate-x-8 -translate-y-8 ${color} rounded-full opacity-10`} />
+      <CardHeader className="p-6">
+        <div className="flex justify-between items-start">
+          <div>
+            <p className="text-sm font-medium text-gray-600">{title}</p>
+            <CardTitle className="text-3xl font-bold mt-2">
+              {isLoading ? <Skeleton className="h-8 w-16" /> : value}
+            </CardTitle>
+          </div>
+          <div className={`p-3 rounded-xl ${color} bg-opacity-20`}>
+            <Icon className={`w-6 h-6 ${color.replace('bg-', 'text-')}`} />
+          </div>
+        </div>
+        {trend && (
+          <div className="flex items-center mt-4 text-sm">
+            <TrendingUp className="w-4 h-4 mr-1 text-green-500" />
+            <span className="text-green-500 font-medium">{trend}</span>
+          </div>
+        )}
+      </CardHeader>
+    </Card>
+  );
+
+  return (
+    <>
+      <StatCard
+        title="Total Leads"
+        value={stats.totalLeads}
+        icon={Users}
+        color="bg-blue-500"
+        trend="12% this month"
+      />
+      <StatCard
+        title="Closed Deals"
+        value={stats.closedLeads}
+        icon={TrendingUp}
+        color="bg-green-500"
+        trend="8% this month"
+      />
+      <StatCard
+        title="Total Value"
+        value={`$${stats.totalValue.toLocaleString()}`}
+        icon={DollarSign}
+        color="bg-purple-500"
+      />
+      <StatCard
+        title="Commission"
+        value={`$${stats.monthlyCommission.toLocaleString()}`}
+        icon={Calendar}
+        color="bg-amber-500"
+      />
+    </>
+  );
+}

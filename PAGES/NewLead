@@ -1,0 +1,363 @@
+import React, { useState } from "react";
+import { Lead } from "@/entities/Lead";
+import { useNavigate } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { ArrowLeft, Save, User, Home, DollarSign } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+
+export default function NewLead() {
+  const navigate = useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    first_name: "",
+    last_name: "",
+    email: "",
+    phone: "",
+    address: "",
+    city: "",
+    state: "",
+    zip_code: "",
+    monthly_electric_bill: "",
+    roof_type: "",
+    home_ownership: "",
+    credit_score_range: "",
+    source: "",
+    priority: "medium"
+  });
+
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    try {
+      const leadData = {
+        ...formData,
+        monthly_electric_bill: formData.monthly_electric_bill ? parseFloat(formData.monthly_electric_bill) : null,
+        status: "new"
+      };
+      
+      await Lead.create(leadData);
+      navigate(createPageUrl("Dashboard"));
+    } catch (error) {
+      console.error("Error creating lead:", error);
+    }
+    
+    setIsSubmitting(false);
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-8">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate(createPageUrl("Dashboard"))}
+            className="hover:bg-white"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">New Lead</h1>
+            <p className="text-gray-600 mt-1">Capture potential customer information</p>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Personal Information */}
+          <Card className="shadow-lg border-0">
+            <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-lg">
+              <CardTitle className="flex items-center gap-2 text-blue-900">
+                <User className="w-5 h-5" />
+                Personal Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="first_name" className="text-sm font-medium text-gray-700">
+                    First Name *
+                  </Label>
+                  <Input
+                    id="first_name"
+                    value={formData.first_name}
+                    onChange={(e) => handleInputChange("first_name", e.target.value)}
+                    required
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="last_name" className="text-sm font-medium text-gray-700">
+                    Last Name *
+                  </Label>
+                  <Input
+                    id="last_name"
+                    value={formData.last_name}
+                    onChange={(e) => handleInputChange("last_name", e.target.value)}
+                    required
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                    Email
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange("email", e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="phone" className="text-sm font-medium text-gray-700">
+                    Phone Number *
+                  </Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => handleInputChange("phone", e.target.value)}
+                    required
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Property Information */}
+          <Card className="shadow-lg border-0">
+            <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-t-lg">
+              <CardTitle className="flex items-center gap-2 text-green-900">
+                <Home className="w-5 h-5" />
+                Property Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 space-y-4">
+              <div>
+                <Label htmlFor="address" className="text-sm font-medium text-gray-700">
+                  Address *
+                </Label>
+                <Input
+                  id="address"
+                  value={formData.address}
+                  onChange={(e) => handleInputChange("address", e.target.value)}
+                  required
+                  className="mt-1"
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="city" className="text-sm font-medium text-gray-700">
+                    City
+                  </Label>
+                  <Input
+                    id="city"
+                    value={formData.city}
+                    onChange={(e) => handleInputChange("city", e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="state" className="text-sm font-medium text-gray-700">
+                    State
+                  </Label>
+                  <Input
+                    id="state"
+                    value={formData.state}
+                    onChange={(e) => handleInputChange("state", e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="zip_code" className="text-sm font-medium text-gray-700">
+                    ZIP Code
+                  </Label>
+                  <Input
+                    id="zip_code"
+                    value={formData.zip_code}
+                    onChange={(e) => handleInputChange("zip_code", e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="roof_type" className="text-sm font-medium text-gray-700">
+                    Roof Type
+                  </Label>
+                  <Select onValueChange={(value) => handleInputChange("roof_type", value)}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Select roof type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="shingle">Shingle</SelectItem>
+                      <SelectItem value="tile">Tile</SelectItem>
+                      <SelectItem value="metal">Metal</SelectItem>
+                      <SelectItem value="flat">Flat</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="home_ownership" className="text-sm font-medium text-gray-700">
+                    Home Ownership
+                  </Label>
+                  <Select onValueChange={(value) => handleInputChange("home_ownership", value)}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Select ownership status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="own">Own</SelectItem>
+                      <SelectItem value="rent">Rent</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Financial Information */}
+          <Card className="shadow-lg border-0">
+            <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-t-lg">
+              <CardTitle className="flex items-center gap-2 text-amber-900">
+                <DollarSign className="w-5 h-5" />
+                Financial Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="monthly_electric_bill" className="text-sm font-medium text-gray-700">
+                    Monthly Electric Bill ($)
+                  </Label>
+                  <Input
+                    id="monthly_electric_bill"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={formData.monthly_electric_bill}
+                    onChange={(e) => handleInputChange("monthly_electric_bill", e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="credit_score_range" className="text-sm font-medium text-gray-700">
+                    Credit Score Range
+                  </Label>
+                  <Select onValueChange={(value) => handleInputChange("credit_score_range", value)}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Select credit score range" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="300-579">300-579 (Poor)</SelectItem>
+                      <SelectItem value="580-669">580-669 (Fair)</SelectItem>
+                      <SelectItem value="670-739">670-739 (Good)</SelectItem>
+                      <SelectItem value="740-799">740-799 (Very Good)</SelectItem>
+                      <SelectItem value="800+">800+ (Excellent)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Lead Details */}
+          <Card className="shadow-lg border-0">
+            <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-t-lg">
+              <CardTitle className="text-purple-900">Lead Details</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="source" className="text-sm font-medium text-gray-700">
+                    Lead Source
+                  </Label>
+                  <Select onValueChange={(value) => handleInputChange("source", value)}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Select lead source" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="door_to_door">Door to Door</SelectItem>
+                      <SelectItem value="online">Online</SelectItem>
+                      <SelectItem value="referral">Referral</SelectItem>
+                      <SelectItem value="social_media">Social Media</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="priority" className="text-sm font-medium text-gray-700">
+                    Priority Level
+                  </Label>
+                  <Select 
+                    value={formData.priority} 
+                    onValueChange={(value) => handleInputChange("priority", value)}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                      <SelectItem value="urgent">Urgent</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Submit Button */}
+          <div className="flex justify-end gap-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate(createPageUrl("Dashboard"))}
+              className="px-6"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="px-6 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+            >
+              {isSubmitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Creating Lead...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  Create Lead
+                </>
+              )}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}

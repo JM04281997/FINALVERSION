@@ -1,0 +1,262 @@
+import React, { useState, useEffect } from "react";
+import { Lead } from "@/entities/Lead";
+import { User } from "@/entities/User";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DollarSign, TrendingUp, Calendar, Download } from "lucide-react";
+import { format } from "date-fns";
+
+export default function Commission() {
+  const [leads, setLeads] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [selectedPeriod, setSelectedPeriod] = useState("current_month");
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      const [leadsData, userData] = await Promise.all([
+        Lead.list("-created_date"),
+        User.me()
+      ]);
+      setLeads(leadsData);
+      setCurrentUser(userData);
+    } catch (error) {
+      console.error("Error loading commission data:", error);
+    }
+    setIsLoading(false);
+  };
+
+  const getFilteredLeads = () => {
+    let filtered = leads.filter(lead => 
+      lead.status === 'closed' && 
+      lead.commission_amount > 0 &&
+      (currentUser?.role === 'admin' || lead.assigned_to === currentUser?.email)
+    );
+
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    switch (selectedPeriod) {
+      case "current_month":
+        filtered = filtered.filter(lead => {
+          const leadDate = new Date(lead.created_date);
+          return leadDate.getMonth() === currentMonth && leadDate.getFullYear() === currentYear;
+        });
+        break;
+      case "last_month":
+        const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+        const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+        filtered = filtered.filter(lead => {
+          const leadDate = new Date(lead.created_date);
+          return leadDate.getMonth() === lastMonth && leadDate.getFullYear() === lastMonthYear;
+        });
+        break;
+      case "current_year":
+        filtered = filtered.filter(lead => {
+          const leadDate = new Date(lead.created_date);
+          return leadDate.getFullYear() === currentYear;
+        });
+        break;
+      default:
+        break;
+    }
+
+    return filtered;
+  };
+
+  const getCommissionStats = () => {
+    const filteredLeads = getFilteredLeads();
+    
+    return {
+      totalCommission: filteredLeads.reduce((sum, lead) => sum + (lead.commission_amount || 0), 0),
+      totalDeals: filteredLeads.length,
+      totalValue: filteredLeads.reduce((sum, lead) => sum + (lead.contract_value || 0), 0),
+      avgDealSize: filteredLeads.length > 0 
+        ? filteredLeads.reduce((sum, lead) => sum + (lead.contract_value || 0), 0) / filteredLeads.length
+        : 0
+    };
+  };
+
+  const stats = getCommissionStats();
+  const commissionLeads = getFilteredLeads();
+
+  const getPeriodLabel = () => {
+    const now = new Date();
+    switch (selectedPeriod) {
+      case "current_month":
+        return format(now, 'MMMM yyyy');
+      case "last_month":
+        const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1);
+        return format(lastMonth, 'MMMM yyyy');
+      case "current_year":
+        return format(now, 'yyyy');
+      default:
+        return "All Time";
+    }
+  };
+
+  return (
+    <div className="p-6 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Commission Tracking</h1>
+            <p className="text-gray-600 mt-1">Track your earnings and performance</p>
+          </div>
+          <div className="flex gap-3">
+            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+              <SelectTrigger className="w-48">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="current_month">Current Month</SelectItem>
+                <SelectItem value="last_month">Last Month</SelectItem>
+                <SelectItem value="current_year">Current Year</SelectItem>
+                <SelectItem value="all_time">All Time</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline">
+              <Download className="w-4 h-4 mr-2" />
+              Export Report
+            </Button>
+          </div>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <Card className="shadow-lg border-0">
+            <CardHeader className="pb-3">
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Total Commission</p>
+                  <p className="text-3xl font-bold text-green-600 mt-1">
+                    ${stats.totalCommission.toLocaleString()}
+                  </p>
+                </div>
+                <div className="p-3 rounded-xl bg-green-100">
+                  <DollarSign className="w-6 h-6 text-green-600" />
+                </div>
+              </div>
+              <p className="text-sm text-gray-500 mt-2">{getPeriodLabel()}</p>
+            </CardHeader>
+          </Card>
+
+          <Card className="shadow-lg border-0">
+            <CardHeader className="pb-3">
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Deals Closed</p>
+                  <p className="text-3xl font-bold text-blue-600 mt-1">
+                    {stats.totalDeals}
+                  </p>
+                </div>
+                <div className="p-3 rounded-xl bg-blue-100">
+                  <TrendingUp className="w-6 h-6 text-blue-600" />
+                </div>
+              </div>
+              <p className="text-sm text-gray-500 mt-2">{getPeriodLabel()}</p>
+            </CardHeader>
+          </Card>
+
+          <Card className="shadow-lg border-0">
+            <CardHeader className="pb-3">
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Total Value</p>
+                  <p className="text-3xl font-bold text-purple-600 mt-1">
+                    ${stats.totalValue.toLocaleString()}
+                  </p>
+                </div>
+                <div className="p-3 rounded-xl bg-purple-100">
+                  <DollarSign className="w-6 h-6 text-purple-600" />
+                </div>
+              </div>
+              <p className="text-sm text-gray-500 mt-2">{getPeriodLabel()}</p>
+            </CardHeader>
+          </Card>
+
+          <Card className="shadow-lg border-0">
+            <CardHeader className="pb-3">
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Avg Deal Size</p>
+                  <p className="text-3xl font-bold text-amber-600 mt-1">
+                    ${stats.avgDealSize.toLocaleString()}
+                  </p>
+                </div>
+                <div className="p-3 rounded-xl bg-amber-100">
+                  <TrendingUp className="w-6 h-6 text-amber-600" />
+                </div>
+              </div>
+              <p className="text-sm text-gray-500 mt-2">{getPeriodLabel()}</p>
+            </CardHeader>
+          </Card>
+        </div>
+
+        {/* Commission Details */}
+        <Card className="shadow-lg border-0">
+          <CardHeader>
+            <CardTitle className="text-xl font-semibold">Commission Details</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {commissionLeads.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                <DollarSign className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                <p className="text-lg">No commission data</p>
+                <p className="text-sm">Close some deals to see your commission earnings</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {commissionLeads.map((lead) => (
+                  <div key={lead.id} className="p-4 border rounded-lg hover:shadow-md transition-shadow">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h3 className="font-semibold text-gray-900">
+                          {lead.first_name} {lead.last_name}
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          {lead.address}
+                        </p>
+                      </div>
+                      <Badge className="bg-green-100 text-green-800">
+                        Closed
+                      </Badge>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-500">Contract Value:</span>
+                        <p className="font-semibold">${lead.contract_value?.toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Commission Rate:</span>
+                        <p className="font-semibold">{lead.commission_rate}%</p>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Commission:</span>
+                        <p className="font-semibold text-green-600">${lead.commission_amount?.toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Date Closed:</span>
+                        <p className="font-semibold">{format(new Date(lead.created_date), 'MMM d, yyyy')}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}

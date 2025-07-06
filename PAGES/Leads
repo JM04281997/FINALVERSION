@@ -1,0 +1,203 @@
+import React, { useState, useEffect } from "react";
+import { Lead } from "@/entities/Lead";
+import { User } from "@/entities/User";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+import { Search, Filter, Plus, Users } from "lucide-react";
+
+import LeadsList from "../components/leads/LeadsList";
+import LeadsFilters from "../components/leads/LeadsFilters";
+import LeadDetails from "../components/leads/LeadDetails";
+
+export default function Leads() {
+  const [leads, setLeads] = useState([]);
+  const [filteredLeads, setFilteredLeads] = useState([]);
+  const [selectedLead, setSelectedLead] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filters, setFilters] = useState({
+    status: "all",
+    priority: "all",
+    source: "all"
+  });
+  const [currentUser, setCurrentUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  useEffect(() => {
+    applyFilters();
+  }, [leads, searchTerm, filters, currentUser]);
+
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      const [leadsData, userData] = await Promise.all([
+        Lead.list("-created_date"),
+        User.me()
+      ]);
+      setLeads(leadsData);
+      setCurrentUser(userData);
+    } catch (error) {
+      console.error("Error loading leads:", error);
+    }
+    setIsLoading(false);
+  };
+
+  const applyFilters = () => {
+    let filtered = [...leads];
+
+    // Filter by user role
+    if (currentUser?.role === 'closer') {
+      filtered = filtered.filter(lead => lead.assigned_to === currentUser.email);
+    }
+
+    // Apply search
+    if (searchTerm) {
+      filtered = filtered.filter(lead => 
+        lead.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        lead.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        lead.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        lead.phone?.includes(searchTerm) ||
+        lead.address?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Apply filters
+    if (filters.status !== "all") {
+      filtered = filtered.filter(lead => lead.status === filters.status);
+    }
+    if (filters.priority !== "all") {
+      filtered = filtered.filter(lead => lead.priority === filters.priority);
+    }
+    if (filters.source !== "all") {
+      filtered = filtered.filter(lead => lead.source === filters.source);
+    }
+
+    setFilteredLeads(filtered);
+  };
+
+  const handleUpdateLead = async (leadId, updates) => {
+    try {
+      await Lead.update(leadId, updates);
+      await loadData();
+      if (selectedLead?.id === leadId) {
+        setSelectedLead(prev => ({ ...prev, ...updates }));
+      }
+    } catch (error) {
+      console.error("Error updating lead:", error);
+    }
+  };
+
+  return (
+    <div className="p-6 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Leads</h1>
+            <p className="text-gray-600 mt-1">
+              {currentUser?.role === 'closer' ? 'Your assigned leads' : 'All leads in the system'}
+            </p>
+          </div>
+          <Link to={createPageUrl("NewLead")}>
+            <Button className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600">
+              <Plus className="w-4 h-4 mr-2" />
+              New Lead
+            </Button>
+          </Link>
+        </div>
+
+        {/* Search and Filters */}
+        <Card className="mb-6 shadow-lg border-0">
+          <CardContent className="p-6">
+            <div className="flex flex-col lg:flex-row gap-4">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
+                  <Input
+                    placeholder="Search leads by name, email, phone, or address..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              <LeadsFilters filters={filters} onFiltersChange={setFilters} />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Stats Row */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <Card className="shadow-md border-0">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-blue-500" />
+                <div>
+                  <p className="text-sm text-gray-600">Total Leads</p>
+                  <p className="text-2xl font-bold">{filteredLeads.length}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="shadow-md border-0">
+            <CardContent className="p-4">
+              <div>
+                <p className="text-sm text-gray-600">New</p>
+                <p className="text-2xl font-bold text-blue-600">
+                  {filteredLeads.filter(l => l.status === 'new').length}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="shadow-md border-0">
+            <CardContent className="p-4">
+              <div>
+                <p className="text-sm text-gray-600">In Progress</p>
+                <p className="text-2xl font-bold text-amber-600">
+                  {filteredLeads.filter(l => ['assigned', 'contacted'].includes(l.status)).length}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="shadow-md border-0">
+            <CardContent className="p-4">
+              <div>
+                <p className="text-sm text-gray-600">Closed</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {filteredLeads.filter(l => l.status === 'closed').length}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Main Content */}
+        <div className="grid lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <LeadsList 
+              leads={filteredLeads}
+              onSelectLead={setSelectedLead}
+              onUpdateLead={handleUpdateLead}
+              isLoading={isLoading}
+              currentUser={currentUser}
+            />
+          </div>
+          <div>
+            <LeadDetails 
+              lead={selectedLead}
+              onUpdateLead={handleUpdateLead}
+              currentUser={currentUser}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
